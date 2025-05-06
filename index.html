@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Red Light Green Light</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #f0f0f0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .floating, .replay {
+      padding: 12px 24px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 25px;
+      cursor: pointer;
+      font-size: 16px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+    .replay {
+      margin-top: 5px;
+    }
+
+    .hud {
+      margin: 10px 0 20px 0;
+      display: flex;
+      gap: 30px;
+      font-weight: bold;
+      font-size: 16px;
+    }
+
+    .game {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 5vw;
+      width: 90vw;
+      max-width: 400px;
+    }
+
+    .box {
+      aspect-ratio: 1 / 1;
+      background: #ccc;
+      border-radius: 5px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .red { background-color: #e74c3c; }
+    .green { background-color: #2ecc71; }
+
+    .won {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      top: 100%;
+      background: #2ecc71;
+      color: white;
+      padding: 20px 30px;
+      border-radius: 20px;
+      font-size: 20px;
+      transition: top 0.6s ease-in-out;
+      z-index: 10;
+    }
+
+    .leaderboard {
+      margin-top: 20px;
+      padding: 10px;
+      background: #fff;
+      border-radius: 10px;
+      width: 90%;
+      max-width: 300px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    .leaderboard h3 {
+      margin-top: 0;
+    }
+
+    .leaderboard ol {
+      padding-left: 20px;
+    }
+
+    @keyframes won {
+      from { top: 100%; }
+      to { top: 30%; }
+    }
+
+    @media (max-width: 500px) {
+      .game {
+        grid-template-columns: repeat(5, 1fr);
+        gap: 4vw;
+      }
+
+      .floating, .replay {
+        font-size: 14px;
+        padding: 10px 18px;
+      }
+
+      .won {
+        font-size: 18px;
+        padding: 15px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <button class="floating">Start Game</button>
+  <button class="replay">Replay</button>
+
+  <div class="hud">
+    <div>Time: <span id="timer">60</span>s</div>
+    <div>Score: <span id="score">0</span></div>
+  </div>
+
+  <div class="game"></div>
+
+  <div class="won">🎉 Completed! Your Score: <span id="final-score"></span></div>
+
+  <div class="leaderboard">
+    <h3>🏆 Leaderboard</h3>
+    <ol id="leaderboard-list"></ol>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/@mojs/core"></script>
+
+  <script>
+    const game = document.querySelector('.game');
+    let arrFactory = [], arrTree = [], newFactory;
+    let timer, timeLeft = 60, score = 0;
+    const interval = 800, maxTime = 60;
+
+    function createGame() {
+      game.innerHTML = '';
+      for (let i = 0; i < 30; i++) {
+        let b = document.createElement('div');
+        b.classList.add('box');
+        b.setAttribute('data-value', i);
+        game.appendChild(b);
+      }
+    }
+
+    function resetGame() {
+      document.querySelectorAll('.box').forEach(box => {
+        box.classList.remove('green', 'tree', 'red', 'factory');
+      });
+      arrFactory = [];
+      arrTree = [];
+      timeLeft = maxTime;
+      score = 0;
+      document.getElementById('timer').textContent = timeLeft;
+      document.getElementById('score').textContent = score;
+    }
+
+    function startTimer() {
+      document.getElementById('timer').textContent = timeLeft;
+      timer = setInterval(() => {
+        timeLeft--;
+        document.getElementById('timer').textContent = timeLeft;
+        if (timeLeft <= 0) {
+          endGame(false);
+        }
+      }, 1000);
+    }
+
+    function endGame(success) {
+      clearInterval(newFactory);
+      clearInterval(timer);
+
+      if (success) {
+        score = timeLeft;
+      } else {
+        score = 0;
+      }
+
+      document.getElementById('score').textContent = score;
+      document.getElementById('final-score').textContent = score;
+      document.querySelector('.won').style.animation = 'won .6s ease-in-out';
+      document.querySelector('.won').style.top = '30%';
+      saveScore(score);
+      loadLeaderboard();
+    }
+
+    function addTree(e) {
+      const c = e.target;
+      const val = c.dataset.value;
+
+      if (!arrTree.includes(val)) {
+        arrTree.push(val);
+      }
+
+      if (arrFactory.includes(val)) {
+        arrFactory.splice(arrFactory.indexOf(val), 1);
+      }
+
+      c.classList.remove('red', 'factory');
+      c.classList.add('green', 'tree');
+
+      if (arrTree.length === 30) {
+        endGame(true);
+      }
+    }
+
+    function randomFactory() {
+      const boxes = document.querySelectorAll('.box');
+      let g = Math.floor(Math.random() * 30);
+      const val = boxes[g].dataset.value;
+
+      if (!arrFactory.includes(val)) {
+        arrFactory.push(val);
+        boxes[g].classList.add('red', 'factory');
+        boxes[g].classList.remove('green', 'tree');
+      }
+
+      if (arrTree.includes(val)) {
+        arrTree.splice(arrTree.indexOf(val), 1);
+      }
+    }
+
+    function fire(e) {
+      const trg = e.target;
+      const itemDim = trg.getBoundingClientRect();
+      const itemSize = {
+        x: itemDim.right - itemDim.left,
+        y: itemDim.bottom - itemDim.top,
+      };
+
+      let burst = new mojs.Burst({
+        left: itemDim.left + (itemSize.x / 2),
+        top: itemDim.top + (itemSize.y / 1.7),
+        count: 9,
+        radius: { 50: 90 },
+      });
+      burst.play();
+    }
+
+    function saveScore(score) {
+      let scores = JSON.parse(localStorage.getItem('leaderboard')) || [];
+      scores.push(score);
+      scores.sort((a, b) => b - a);
+      scores = scores.slice(0, 5);
+      localStorage.setItem('leaderboard', JSON.stringify(scores));
+    }
+
+    function loadLeaderboard() {
+      const scores = JSON.parse(localStorage.getItem('leaderboard')) || [];
+      const list = document.getElementById('leaderboard-list');
+      list.innerHTML = '';
+      scores.forEach((s, i) => {
+        const li = document.createElement('li');
+        li.textContent = `#${i + 1} – ${s} pts`;
+        list.appendChild(li);
+      });
+    }
+
+    // Init
+    createGame();
+    loadLeaderboard();
+
+    document.querySelector('.floating').addEventListener('click', () => {
+      resetGame();
+      document.querySelector('.won').style.top = '100%';
+      newFactory = setInterval(randomFactory, interval);
+      startTimer();
+    });
+
+    document.querySelector('.replay').addEventListener('click', () => {
+      resetGame();
+      document.querySelector('.won').style.top = '100%';
+      newFactory = setInterval(randomFactory, interval);
+      startTimer();
+    });
+
+    document.addEventListener('click', function (e) {
+      if (e.target.classList.contains('box')) {
+        addTree(e);
+        fire(e);
+      }
+    });
+  </script>
+</body>
+</html>
