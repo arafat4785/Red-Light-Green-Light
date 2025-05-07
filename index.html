@@ -129,10 +129,18 @@
   <div class="game"></div>
 
   <div class="won">🎉 Completed! Your Score: <span id="final-score"></span></div>
-  
-  ads.ad_show({   adBlockUuid: "f30acba4-35db-47a7-a5d5-9aad56c8bedc" });  
-  
-  <div class="leaderboard">
+
+<div class="banner-ad" style="margin: 20px 0; text-align: center;">
+  <script>
+  window.addEventListener('load', () => {
+    ads.ad_show({
+      adBlockUuid: "f30acba4-35db-47a7-a5d5-9aad56c8bedc"
+    });
+  });
+</script>
+</div>
+
+<div class="leaderboard">
     <h3>🏆 Leaderboard</h3>
     <ol id="leaderboard-list"></ol>
   </div>
@@ -293,7 +301,7 @@
       }
     });
   </script>
-  <script src="https://inapp.telega.io/sdk/v1/sdk.js"></script>
+<script src="https://inapp.telega.io/sdk/v1/sdk.js"></script>
 <script>
   const ads = window.TelegaIn.AdsController.create_miniapp({
     token: 'f1f1f4c9-2572-4c09-9bb1-1df784d8d798' });
