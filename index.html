@@ -93,6 +93,11 @@
       padding-left: 20px;
     }
 
+    .banner-ad {
+      margin: 30px 0;
+      text-align: center;
+    }
+
     @keyframes won {
       from { top: 100%; }
       to { top: 30%; }
@@ -113,6 +118,14 @@
         font-size: 18px;
         padding: 15px 20px;
       }
+
+      .banner-ad {
+        margin: 20px 0;
+      }
+
+      .leaderboard {
+        margin-top: 20px;
+      }
     }
   </style>
 </head>
@@ -130,17 +143,11 @@
 
   <div class="won">🎉 Completed! Your Score: <span id="final-score"></span></div>
 
-<div class="banner-ad" style="margin: 20px 0; text-align: center;">
-  <script>
-  window.addEventListener('load', () => {
-    ads.ad_show({
-      adBlockUuid: "f30acba4-35db-47a7-a5d5-9aad56c8bedc"
-    });
-  });
-</script>
-</div>
+  <div class="banner-ad">
+    <div id="ad-container"></div>
+  </div>
 
-<div class="leaderboard">
+  <div class="leaderboard">
     <h3>🏆 Leaderboard</h3>
     <ol id="leaderboard-list"></ol>
   </div>
@@ -149,9 +156,11 @@
 
   <script>
     const game = document.querySelector('.game');
-    let arrFactory = [], arrTree = [], newFactory;
-    let timer, timeLeft = 60, score = 0;
-    const interval = 800, maxTime = 60;
+    let arrFactory = [], arrTree = [], newFactory, timer;
+    let timeLeft = 60, score = 0;
+    const maxTime = 60;
+    const interval = 530; // Increased speed (original 800ms * 0.66)
+    let gameActive = false;
 
     function createGame() {
       game.innerHTML = '';
@@ -171,6 +180,7 @@
       arrTree = [];
       timeLeft = maxTime;
       score = 0;
+      gameActive = true;
       document.getElementById('timer').textContent = timeLeft;
       document.getElementById('score').textContent = score;
     }
@@ -189,6 +199,7 @@
     function endGame(success) {
       clearInterval(newFactory);
       clearInterval(timer);
+      gameActive = false;
 
       if (success) {
         score = timeLeft;
@@ -205,23 +216,18 @@
     }
 
     function addTree(e) {
+      if (!gameActive || !e.target.classList.contains('box')) return;
+
       const c = e.target;
       const val = c.dataset.value;
 
-      if (!arrTree.includes(val)) {
-        arrTree.push(val);
-      }
-
-      if (arrFactory.includes(val)) {
-        arrFactory.splice(arrFactory.indexOf(val), 1);
-      }
+      if (!arrTree.includes(val)) arrTree.push(val);
+      if (arrFactory.includes(val)) arrFactory.splice(arrFactory.indexOf(val), 1);
 
       c.classList.remove('red', 'factory');
       c.classList.add('green', 'tree');
 
-      if (arrTree.length === 30) {
-        endGame(true);
-      }
+      if (arrTree.length === 30) endGame(true);
     }
 
     function randomFactory() {
@@ -235,12 +241,11 @@
         boxes[g].classList.remove('green', 'tree');
       }
 
-      if (arrTree.includes(val)) {
-        arrTree.splice(arrTree.indexOf(val), 1);
-      }
+      if (arrTree.includes(val)) arrTree.splice(arrTree.indexOf(val), 1);
     }
 
     function fire(e) {
+      if (!gameActive || !e.target.classList.contains('box')) return;
       const trg = e.target;
       const itemDim = trg.getBoundingClientRect();
       const itemSize = {
@@ -276,7 +281,6 @@
       });
     }
 
-    // Init
     createGame();
     loadLeaderboard();
 
@@ -295,16 +299,23 @@
     });
 
     document.addEventListener('click', function (e) {
-      if (e.target.classList.contains('box')) {
-        addTree(e);
-        fire(e);
-      }
+      addTree(e);
+      fire(e);
     });
   </script>
-<script src="https://inapp.telega.io/sdk/v1/sdk.js"></script>
-<script>
-  const ads = window.TelegaIn.AdsController.create_miniapp({
-    token: 'f1f1f4c9-2572-4c09-9bb1-1df784d8d798' });
-</script>
+
+  <!-- Telega Ads SDK -->
+  <script src="https://inapp.telega.io/sdk/v1/sdk.js"></script>
+  <script>
+    const ads = window.TelegaIn.AdsController.create_miniapp({
+      token: 'f1f1f4c9-2572-4c09-9bb1-1df784d8d798'
+    });
+
+    window.addEventListener('load', () => {
+      ads.ad_show({
+        adBlockUuid: "f30acba4-35db-47a7-a5d5-9aad56c8bedc"
+      });
+    });
+  </script>
 </body>
 </html>
